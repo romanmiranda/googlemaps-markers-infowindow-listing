@@ -11,23 +11,38 @@
         padding: 0;
       }
       #map {
-        width: 80%;
+        width: 60%;
         height: 100%;
+        float: left;
+        margin:0;
       }
       #list-view{
-        width: 20%;
+        width: 30%;
+        float: right;
+        margin:0;
       }
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
   </head>
   <body>
     <div id="map"></div>
-    <div id="list-view"></div>
+    <ul id="list-view"></ul>
     <script>
+
+
+      bindEvent = function(element, type, handler) {
+          if (element.addEventListener) {
+              element.addEventListener(type, handler, false);
+          } else {
+              element.attachEvent('on'+type, handler);
+          }
+      };
 
       //Initialize the global vars markers and map
       var map;
       var markers = [];
       var infoWindows = [];
+      var infoWindow;
 
       function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
@@ -42,6 +57,7 @@
 
       var places = [
         {
+          id: 87382,
           title: "1315 Platine Hill",
           address: "San Antonio, Texas 78287 | Bella Vista",
           picture: "picture.png",
@@ -53,8 +69,9 @@
           lng: 151.274856
         },
         {
+          id: 83823,
           title: "39 Oriente",
-          address: "San Antonio, Texas 78287 | Bella Vista",
+          address: "San Antonio, Texas 323 | Lynda Vista",
           picture: "picture.png",
           price: "415,000",
           beds: 5,
@@ -74,10 +91,10 @@
 
         // Origins, anchor positions and coordinates of the marker increase in the X
         // direction to the right and in the Y direction down.
-        var image = {
-          url: 'images/beachflag.png',
+        var icon = {
+          url: 'home.png',
           // This marker is 20 pixels wide by 32 pixels high.
-          size: new google.maps.Size(20, 32),
+          size: new google.maps.Size(32, 37),
           // The origin for this image is (0, 0).
           origin: new google.maps.Point(0, 0),
           // The anchor for this image is the base of the flagpole at (0, 32).
@@ -91,34 +108,64 @@
           type: 'poly'
         };
 
-        var marker, i;
+        var marker, i, listItems = [];
+
+        infoWindow = new google.maps.InfoWindow();
 
         for (i = 0; i < places.length; i++) {
           
           var place = places[i];
 
+          //Markers
           marker = new google.maps.Marker({
             position: new google.maps.LatLng(place.lat,place.lng),
             map: map,
-            //icon: image,
+            icon: icon,
             ///shape: shape,
             title: place.title
           });
 
-          var infoWindow = new google.maps.InfoWindow();
+          google.maps.event.addListener(marker, 'click', (function(marker, i, place, infoWindow) {
 
-          google.maps.event.addListener(marker, 'click', (function(marker, i, place) {
             return function() {
               var source   = document.getElementById("info-window-template").innerHTML;
               var template = Handlebars.compile(source);
+
               infoWindow.setContent(template(place));
               infoWindow.open(map, marker);
             }
-          })(marker, i, place));
+
+          })(marker, i, place, infoWindow));
+
+
+
+
+          //Listing
+          var source = document.getElementById("listing-item-template").innerHTML;
+          var template = Handlebars.compile(source);
+          var node = document.createElement("li");
+          node.innerHTML = template(place);          
+
+          listItem = document.getElementById("list-view").appendChild( node )
+
+          listItems[i] = listItem;
+
+          bindEvent( listItems[i], 'click', (function(map,marker,place,infoWindow){
+            
+            return function(e){
+              e.preventDefault();
+              var source   = document.getElementById("info-window-template").innerHTML;
+              var template = Handlebars.compile(source);
+
+              infoWindow.setContent(template(place));
+              infoWindow.open(map,marker);
+            }
+
+          })(map,marker,place,infoWindow));
 
           markers.push(marker);
-          infoWindows.push(infoWindow);
         }
+
 
       }
 
@@ -147,24 +194,18 @@
 
     </script>
     <script async defer src="https://maps.googleapis.com/maps/api/js?callback=initMap"></script>
-    <script async defer src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.5/handlebars.min.js"></script>
-    
     <script id="info-window-template" type="text/x-handlebars-template">
       <div class="entry">
         <img src="{{picture}}">
         <h1>{{title}}</h1>
-        <div class="body">
-          {{body}}
-        </div>
+        <p>{{address}}</p>
       </div>
     </script>
     
-    <script id="info-window-template" type="text/x-handlebars-template">
-      <div class="entry">
+    <script id="listing-item-template" type="text/x-handlebars-template">
+      <div class="listing-item" href="#">
         <h1>{{title}}</h1>
-        <div class="body">
-          {{body}}
-        </div>
+        <p>{{address}}</p>
       </div>      
     </script>
   </body>
